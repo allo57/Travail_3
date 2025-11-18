@@ -1,13 +1,8 @@
 # Projet 3 — Analyse d’images avec YOLO (You Only Look Once)
 
-## 1. Sujet du projet
-**Analyse d’images avec YOLO (You Only Look Once) — Détection d’objets en temps réel assistée par l’IA**
-
-Nous allons explorer la technologie YOLO (modèle de vision par ordinateur de type “object detection”), une technologie émergente permettant d’identifier des objets dans une image ou une vidéo (personnes, animaux, voitures, etc.) en quelques millisecondes.
-
----
 
 ## 2. Technologies explorées
+
 
 ### Technologie principale
 - **YOLOv8 (Ultralytics)** : modèle de détection d’objets moderne et rapide.
@@ -21,7 +16,6 @@ Nous allons explorer la technologie YOLO (modèle de vision par ordinateur de ty
 ### IA utilisées dans le projet
 - ChatGPT  
 - GitHub Copilot  
-- Gemini ou Claude
 
 ---
 
