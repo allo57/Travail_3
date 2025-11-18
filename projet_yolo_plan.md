@@ -88,4 +88,4 @@ Tous les prompts importants seront enregistrés dans le journal de bord.
 ---
 
 ## 7. Lien GitHub
-*(À compléter après création du dépôt)*  
+(https://github.com/allo57/Travail_3.git)  
