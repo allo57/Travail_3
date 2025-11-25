@@ -5,7 +5,6 @@ from ultralytics import YOLO
 from pathlib import Path
 import cv2
 
-
 class YoloApp:
     def __init__(self, root):
         self.root = root
