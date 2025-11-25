@@ -1,4 +1,5 @@
 from ultralytics import YOLO
+from pathlib import Path
 
 def main():
     # Charger le modèle YOLOv8 (nano, rapide)
@@ -11,19 +12,32 @@ def main():
     choix = input("Choisis une option (1, 2 ou 3) : ")
 
     if choix == "1":
-        chemin = input("Chemin de l'image (ex: Ydger.jpg) : ")
-        # show=True → affiche la fenêtre
-        # save=True → enregistre l'image avec les boxes dans runs/detect/
-        resultats = model(chemin, show=True, save=True)
-        print("Détection terminée sur l'image.")
-        for r in resultats:
-            print(r.boxes)
+        saisie = input("Chemin de l'image (ex: Ydger.jpg) : ")
+        base_dir = Path(__file__).resolve().parent
+
+        chemin = (base_dir / saisie).resolve()
+
+        print("Chemin utilisé :", chemin)
+        if not chemin.exists():
+            print("ERREUR : Le fichier n’existe pas.")
+        else:
+            resultats = model(str(chemin), show=True, save=True)
+            print("Détection terminée sur l'image.")
+
+            for r in resultats:
+                print(r.boxes)
 
     elif choix == "2":
-        chemin = input("Chemin de la vidéo (ex: video.mp4) : ")
-        # YOLO va lire la vidéo, afficher les frames avec les boxes
-        resultats = model(chemin, show=True, save=True)
-        print("Détection terminée sur la vidéo.")
+        saisie = input("Chemin de la vidéo (ex: video.mp4) : ")
+        base_dir = Path(__file__).resolve().parent
+        chemin = (base_dir / saisie).resolve()
+        print("Chemin utilisé :", chemin)
+
+        if not chemin.exists():
+            print("ERREUR : Le fichier vidéo n’existe pas.")
+        else:
+            resultats = model(str(chemin), show=True, save=True)
+            print("Détection terminée sur la vidéo.")
 
     elif choix == "3":
         print("Ouverture de la webcam... (appuie sur 'q' pour fermer la fenêtre)")
