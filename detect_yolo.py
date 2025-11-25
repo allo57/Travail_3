@@ -180,11 +180,14 @@ class YoloApp:
                 fichier,
                 save=True,
                 project=str(self.output_dir),
-                name="image"
+                exist_ok=True,
+                name="images"  # 🔥 toujours le même dossier
             )
 
+
             # YOLO crée un fichier dans detect_output/image/
-            output_folder = self.output_dir / "image"
+            
+            output_folder = self.output_dir / "images"
             images = sorted(output_folder.glob("*.jpg"), key=lambda p: p.stat().st_mtime)
             if images:
                 image_sortie = images[-1]
@@ -205,42 +208,71 @@ class YoloApp:
     # ─────────────────────────────────────────────
     def detect_video(self):
         fichier = filedialog.askopenfilename(
-            title="Choisir une vidéo",
-            filetypes=[("Vidéos", "*.mp4 *.avi *.mov *.mkv")]
+            title="Choose a video",
+            filetypes=[("Videos", "*.mp4 *.avi *.mov *.mkv")]
         )
         if not fichier:
             return
 
-        self.status_label.config(text=f"Analyse de la vidéo : {fichier}")
+        self.status_label.config(text=f"Processing video: {fichier}")
         self.root.update()
 
-        try:
-            results = self.model(
-                fichier,
-                save=True,
-                project=str(self.output_dir),
-                name="video"
-            )
+        # Open the video
+        cap = cv2.VideoCapture(fichier)
+        if not cap.isOpened():
+            messagebox.showerror("Error", "Unable to open the video.")
+            return
 
-            report_path = self.generate_report_from_results(results, fichier)
-            messagebox.showinfo(
-                "Vidéo",
-                "Détection terminée !\n"
-                "La vidéo détectée est dans detect_output/video/\n\n"
-                f"Rapport généré :\n{report_path}"
-            )
-            self.status_label.config(text="Analyse de la vidéo terminée.")
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors de l’analyse de la vidéo :\n{e}")
-            self.status_label.config(text="Erreur lors de l’analyse de la vidéo.")
+        video_class_counter = Counter()
+
+        def process_frame():
+            ret, frame = cap.read()
+
+            # 🔁 If video finished → restart from frame 0
+            if not ret:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                ret, frame = cap.read()
+
+            # Safety check
+            if not ret:
+                return
+
+            # YOLO inference
+            results = self.model(frame)
+            res = results[0]
+            boxes = res.boxes
+            names = res.names
+
+            # Count classes
+            if boxes is not None and len(boxes) > 0:
+                for cls_id in boxes.cls.tolist():
+                    video_class_counter[names[int(cls_id)]] += 1
+
+            # Draw boxes
+            annotated = res.plot()
+
+            # Convert BGR → RGB for Tkinter
+            annotated = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+
+            img = Image.fromarray(annotated)
+            img = img.resize((750, 450))
+            img_tk = ImageTk.PhotoImage(img)
+
+            self.display_label.configure(image=img_tk)
+            self.display_label.image = img_tk
+
+            # Process next frame
+            self.root.after(1, process_frame)
+
+        process_frame()
+
+
 
     # ─────────────────────────────────────────────
     # 3) Détection via webcam (avec FPS + rapport)
     # ─────────────────────────────────────────────
     def detect_webcam(self):
-        self.status_label.config(
-            text="Webcam en cours… (appuie sur 'q' dans la fenêtre vidéo pour quitter)"
-        )
+        self.status_label.config(text="Webcam active…")
         self.root.update()
 
         cap = cv2.VideoCapture(0)
@@ -251,32 +283,39 @@ class YoloApp:
 
         prev_time = time.time()
         class_counts = Counter()
+        self.webcam_running = True
 
-        while True:
+        def update_frame():
+            if not self.webcam_running:
+                cap.release()
+                return
+
             ret, frame = cap.read()
             if not ret:
-                break
+                self.status_label.config(text="Erreur : lecture webcam.")
+                return
 
+            # YOLO inference
             results = self.model(frame)
             res = results[0]
+
+            # Count classes
             boxes = res.boxes
             names = res.names
-
-            # Comptage des classes détectées sur ce frame
             if boxes is not None and len(boxes) > 0:
                 for cls_id in boxes.cls.tolist():
-                    class_name = names[int(cls_id)]
-                    class_counts[class_name] += 1
+                    class_counts[names[int(cls_id)]] += 1
 
-            # Annoter l’image avec les boîtes
+            # Annotated frame
             annotated = res.plot()
 
-            # Calcul des FPS
+            # FPS calculation
+            nonlocal prev_time
             current_time = time.time()
             fps = 1.0 / (current_time - prev_time)
             prev_time = current_time
 
-            # Afficher les FPS sur l’image
+            # Add FPS text
             cv2.putText(
                 annotated,
                 f"FPS: {fps:.1f}",
@@ -288,21 +327,43 @@ class YoloApp:
                 cv2.LINE_AA,
             )
 
-            cv2.imshow("Webcam YOLOv8 - Appuie sur q pour quitter", annotated)
+            # Convert OpenCV → Tkinter image
+            annotated = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(annotated)
+            img = img.resize((750, 450))
+            img_tk = ImageTk.PhotoImage(img)
 
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            self.display_label.configure(image=img_tk)
+            self.display_label.image = img_tk
 
-        cap.release()
-        cv2.destroyAllWindows()
+            # Schedule next frame
+            self.root.after(1, update_frame)
 
-        # Générer le rapport de la session webcam
-        report_path = self.generate_report_from_counter(class_counts, "Webcam (session)")
-        messagebox.showinfo(
-            "Webcam",
-            f"Session webcam terminée.\nRapport généré :\n{report_path}"
+        # Create a STOP button
+        stop_button = tk.Button(
+            self.root,
+            text="⛔ Stop Webcam",
+            font=("Segoe UI", 11),
+            bg="#8b1a1a",
+            fg="white",
+            relief="flat",
+            command=lambda: stop_webcam()
         )
-        self.status_label.config(text="Session webcam terminée.")
+        stop_button.pack()
+
+        def stop_webcam():
+            """Stop webcam loop and generate report"""
+            self.webcam_running = False
+            stop_button.destroy()
+            report_path = self.generate_report_from_counter(class_counts, "Webcam (session)")
+            messagebox.showinfo(
+                "Webcam",
+                f"Session webcam terminée.\nRapport généré :\n{report_path}"
+            )
+            self.status_label.config(text="Webcam arrêtée.")
+
+        update_frame()
+
 
     # ─────────────────────────────────────────────
     # Afficher une image dans Tkinter
