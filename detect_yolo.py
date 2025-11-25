@@ -58,6 +58,7 @@ def main():
 
     elif choix == "3":
         print("Ouverture de la webcam... (appuie sur 'q' pour fermer la fenêtre)")
+
         # 0 = première webcam du système
         resultats = model(0, show=True)
         print("Session webcam terminée.")
