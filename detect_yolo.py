@@ -13,31 +13,48 @@ def main():
 
     if choix == "1":
         saisie = input("Chemin de l'image (ex: Ydger.jpg) : ")
+
         base_dir = Path(__file__).resolve().parent
+        sortie = base_dir / "detect_output"
 
         chemin = (base_dir / saisie).resolve()
 
         print("Chemin utilisé :", chemin)
-        if not chemin.exists():
-            print("ERREUR : Le fichier n’existe pas.")
-        else:
-            resultats = model(str(chemin), show=True, save=True)
-            print("Détection terminée sur l'image.")
 
-            for r in resultats:
-                print(r.boxes)
+        if not chemin.exists():
+            print("ERREUR : L'image n'existe pas.")
+        else:
+            resultats = model(
+                str(chemin),
+                show=True,
+                save=True,
+                project=str(sortie),
+                name="exp"
+            )
+            print("Détection terminée.")
 
     elif choix == "2":
         saisie = input("Chemin de la vidéo (ex: video.mp4) : ")
+
         base_dir = Path(__file__).resolve().parent
+        sortie = base_dir / "detect_output"
+
         chemin = (base_dir / saisie).resolve()
+
         print("Chemin utilisé :", chemin)
 
         if not chemin.exists():
-            print("ERREUR : Le fichier vidéo n’existe pas.")
+            print("ERREUR : La vidéo n'existe pas.")
         else:
-            resultats = model(str(chemin), show=True, save=True)
+            resultats = model(
+                str(chemin),
+                show=True,
+                save=True,
+                project=str(sortie),
+                name="exp"
+            )
             print("Détection terminée sur la vidéo.")
+
 
     elif choix == "3":
         print("Ouverture de la webcam... (appuie sur 'q' pour fermer la fenêtre)")
