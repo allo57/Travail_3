@@ -1,0 +1,10 @@
+===== RAPPORT YOLOv8 =====
+Source analysée : C:/Users/willi/OneDrive/Bureau/Yolo/Travail_3/Ydger.jpg
+
+- person (confiance: 0.902)
+
+Résumé par classe :
+- person : 1
+
+Total d’objets détectés : 1
+===========================
